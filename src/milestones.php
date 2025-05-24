@@ -1,74 +1,84 @@
 <?php
-include('db.php');
+include('D:\xampp\htdocs\Logistics 1\dbconn\db.php');
 
-if (isset($_POST['create_task'])) {
+if (isset($_POST['create_milestone'])) {
     $taskName = $_POST['taskName'];
-    $employeeName = $_POST['employeeName'];
-    $startDate = $_POST['startDate'];
+    $milestoneName = $_POST['milestoneName'];
     $dueDate = $_POST['dueDate'];
-    // $status = $_POST['status'];  // Tanggalin ito kasi default na 'Pending' sa DB
+    $status = 'Not Started';  // dito mo na nilagay ang default status
 
-    // check kung may duplicates (same task name and employee)
-    $check_sql = "SELECT * FROM projecttask WHERE taskName = '$taskName' AND employeeName = '$employeeName'";
-    $check_result = $conn->query($check_sql);
-
-    if ($check_result->num_rows > 0) {
-        // duplicate task
+    if (empty($taskName) || empty($milestoneName) || empty($dueDate)) {
         echo "<script>
             window.onload = function() {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Duplicate Task',
-                    text: 'This task already exists for the same employee.',
+                    title: 'Missing Fields',
+                    text: 'Please fill in all the required fields.',
                     confirmButtonText: 'OK'
                 });
             };
         </script>";
     } else {
-        // wala duplicates ikaw lang talaga
-        $sql = "INSERT INTO projecttask (taskName, employeeName, startDate, dueDate)
-                VALUES ('$taskName', '$employeeName', '$startDate', '$dueDate')";
+        // Check for duplicates
+        $check_sql = "SELECT * FROM milestones WHERE taskName = '$taskName' AND milestoneName = '$milestoneName'";
+        $check_result = $conn->query($check_sql);
 
-        if ($conn->query($sql) === TRUE) {
+        if ($check_result->num_rows > 0) {
             echo "<script>
                 window.onload = function() {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Task Created',
-                        text: 'New task added successfully.',
+                        icon: 'error',
+                        title: 'Duplicate Milestone',
+                        text: 'Milestone already exists for this task.',
                         confirmButtonText: 'OK'
                     });
                 };
             </script>";
         } else {
-            echo "<script>
-                window.onload = function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Database Error',
-                        text: 'Something went wrong. Please try again.',
-                        confirmButtonText: 'OK'
-                    });
-                };
-            </script>";
+            $defaultProjectID = 1;
+
+            $sql = "INSERT INTO milestones (projectID, taskName, milestoneName, dueDate, status, createdAt, updatedAt)
+                    VALUES ('$defaultProjectID', '$taskName', '$milestoneName', '$dueDate', '$status', NOW(), NOW())";
+
+            if ($conn->query($sql) === TRUE) {
+                echo "<script>
+                    window.onload = function() {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Milestone Created',
+                            text: 'New milestone added successfully.',
+                            confirmButtonText: 'OK'
+                        });
+                    };
+                </script>";
+            } else {
+                echo "<script>
+                    window.onload = function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Database Error',
+                            text: 'Something went wrong. Please try again.',
+                            confirmButtonText: 'OK'
+                        });
+                    };
+                </script>";
+            }
         }
     }
 }
 
-// i update mo siya
-if (isset($_POST['update_task'])) {
-    $taskID = $_POST['taskID'];
+// i update mo siya sa buhay mo
+if (isset($_POST['update_milestone'])) {
+    $milestoneID = $_POST['milestoneID'];
     $taskName = $_POST['taskName'];
-    $employeeName = $_POST['employeeName'];
-    $startDate = $_POST['startDate'];
+    $milestoneName = $_POST['milestoneName'];
     $dueDate = $_POST['dueDate'];
     $status = $_POST['status'];
 
-    // check if may ibang task with same name and employee pero ibang ID
-    $check_sql = "SELECT * FROM projecttask 
-                  WHERE taskName = '$taskName' 
-                  AND employeeName = '$employeeName' 
-                  AND taskID != '$taskID'";
+    // check kung duplicates (excluding current milestone)
+    $check_sql = "SELECT * FROM milestones 
+                  WHERE taskName = '$taskName' AND milestoneName = '$milestoneName' 
+                  AND milestoneID != '$milestoneID'";
     $check_result = $conn->query($check_sql);
 
     if ($check_result->num_rows > 0) {
@@ -76,58 +86,54 @@ if (isset($_POST['update_task'])) {
             window.onload = function() {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Duplicate Task',
-                    text: 'Another task with the same name and employee already exists.',
+                    title: 'Duplicate Milestone',
+                    text: 'Another milestone with the same name already exists for this task.',
                     confirmButtonText: 'OK'
                 });
             };
         </script>";
     } else {
-        $sql = "UPDATE projecttask 
-                SET taskName='$taskName', employeeName='$employeeName',
-                    startDate='$startDate', dueDate='$dueDate', status='$status' 
-                WHERE taskID='$taskID'";
+        $sql = "UPDATE milestones 
+                SET taskName='$taskName', milestoneName='$milestoneName', 
+                    dueDate='$dueDate', status='$status', updatedAt=NOW()
+                WHERE milestoneID='$milestoneID'";
 
         if ($conn->query($sql) === TRUE) {
             echo "<script>
-                window.onload = function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Task Updated',
-                        text: 'Task updated successfully.',
-                        confirmButtonText: 'OK'
-                    });
-                };
-            </script>";
+                    window.onload = function() {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Milestone Updated',
+                            text: 'Milestone updated successfully.',
+                            confirmButtonText: 'OK'
+                        });
+                    };
+                  </script>";
         }
     }
 }
 
 
-// i delete mo siya sa buhay mo
-if (isset($_POST['delete_task'])) {
-    $taskID = $_POST['taskID'];
+if (isset($_POST['delete_milestone'])) {
+    $milestoneID = $_POST['milestoneID'];
 
-    $sql = "DELETE FROM projecttask WHERE taskID='$taskID'";
+    $sql = "DELETE FROM milestones WHERE milestoneID='$milestoneID'";
 
     if ($conn->query($sql) === TRUE) {
         echo "<script>
-            window.onload = function() {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Task Deleted',
-                    text: 'Task deleted successfully.',
-                    confirmButtonText: 'OK'
-                });
-            };
-        </script>";
+                window.onload = function() {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Milestone Deleted',
+                        text: 'Milestone deleted successfully.',
+                        confirmButtonText: 'OK'
+                    });
+                };
+              </script>";
     }
 }
-
-// Kunin lahat ng task
-$tasks = $conn->query("SELECT * FROM projecttask");
+$milestones = $conn->query("SELECT * FROM milestones");
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -147,12 +153,6 @@ $tasks = $conn->query("SELECT * FROM projecttask");
         .sidebar-overlay.active { display: block; }
         .menu-name::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background-color: #4E3B2A; transition: width 0.3s ease; }
         .menu-name:hover::after { width: 100%; }
-        .modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%,-50%);
-        }
     </style>
 </head>
 <body>
@@ -223,67 +223,55 @@ $tasks = $conn->query("SELECT * FROM projecttask");
                 </div>
             </nav>
             <main class="px-8 py-8">
-                <h2 class="text-xl font-bold mb-4">Create Task</h2>
-                <button onclick="openTaskModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                    Create Task</button>
+                <h2 class="text-xl font-bold mb-4">Milestones</h2>
+                <button onclick="openMilestoneModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Create Milestone</button>
                     <!-- Modal Container -->
-                     <div id="taskModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
-                        <div id="taskModalContent" 
-                        class="bg-white p-6 rounded shadow-lg w-full max-w-md relative transform scale-95 opacity-0 transition duration-300">
-                        <button onclick="closeTaskModal()"
-                        class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
-                        <form method="POST" class="flex flex-col gap-3">
-                            <h2 class="text-lg font-semibold mb-2">Create Task</h2>
-                             <div class="flex flex-col">
-                                <label for="taskName" class="mb-1 font-medium text-gray-700">Task Name</label>
-                                <input type="text" id="taskName" name="taskName" placeholder="Task Name"
-                                class="p-2 rounded border border-gray-300" required>
-                             </div>
-                             <div class="flex flex-col">
-                                <label for="employeeName" class="mb-1 font-medium text-gray-700">Employee Name</label>
-                                <input type="text" id="employeeName" name="employeeName" placeholder="Employee Name"
-                                class="p-2 rounded border border-gray-300" required>
-                             </div>
-                             <div class="flex flex-col">
-                                <label for="startDate" class="mb-1 font-medium text-gray-700">Start Date</label>
-                                <input type="date" id="startDate" name="startDate"
-                                class="p-2 rounded border border-gray-300" required>
-                             </div>
-                             <div class="flex flex-col">
-                                <label for="dueDate" class="mb-1 font-medium text-gray-700">Due Date</label>
-                                <input type="date" id="dueDate" name="dueDate"
-                                class="p-2 rounded border border-gray-300" required>
-                             </div>
-                            <button type="submit" name="create_task"
-                            class="bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423]">Create Task</button>
-                        </form>
+                     <div id="milestoneModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+                        <div id="milestoneModalContent" class="bg-white p-6 rounded shadow-lg w-full max-w-md relative transform scale-95 opacity-0 transition duration-300">
+                            <button onclick="closeMilestoneModal()"
+                             class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+                             <form method="POST" class="flex flex-col gap-3">
+                                <div class="flex flex-col">
+                                    <label for="taskName" class="mb-1 font-medium text-gray-700">Task Name</label>
+                                    <input type="text" id="taskName" name="taskName" placeholder="Task Name" class="p-2 rounded border border-gray-300" required>
+                                </div>
+                                <div class="flex flex-col">
+                                    <label for="milestoneName" class="mb-1 font-medium text-gray-700">Milestone Name</label>
+                                    <input type="text" id="milestoneName" name="milestoneName" placeholder="Milestone Name" class="p-2 rounded border border-gray-300" required>
+                                </div>
+                                <div class="flex flex-col">
+                                    <label for="dueDate" class="mb-1 font-medium text-gray-700">Due Date</label>
+                                    <input type="date" id="dueDate" name="dueDate" class="p-2 rounded border border-gray-300" required>
+                                </div>
+                                <button type="submit" name="create_milestone"
+                                class="bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423]">Create</button>
+                             </form>
                         </div>
                      </div>
-                <h2 class="text-xl font-bold mb-4">Task List</h2>
+                <h2 class="text-xl font-bold mb-4">Milestones List</h2>
 
                 <table class="min-w-full table-auto border-collapse">
 
                     <thead>
                        <tr class="bg-[#F7E6CA]">
                        <th class="border px-4 py-2">Task Name</th>
-                       <th class="border px-4 py-2">Employee Name</th>
-                       <th class="border px-4 py-2">Start Date</th>
+                       <th class="border px-4 py-2">Milestone Name</th>
                        <th class="border px-4 py-2">Due Date</th>
                        <th class="border px-4 py-2">Status</th>
                        <th class="border px-4 py-2">Actions</th>
                        </tr>
                      </thead>
                      <tbody>
-                        <?php while ($task = $tasks->fetch_assoc()): ?>
+                        <?php while ($row = $milestones->fetch_assoc()): ?>
                             <tr>
-                                <td class="border px-4 py-2"><?php echo $task['taskName']; ?></td>
-                                <td class="border px-4 py-2"><?php echo $task['employeeName']; ?></td>
-                                <td class="border px-4 py-2"><?php echo $task['startDate']; ?></td>
-                                <td class="border px-4 py-2"><?php echo $task['dueDate']; ?></td>
-                                <td class="border px-4 py-2"><?php echo $task['status']; ?></td>
+                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['taskName']); ?></td>
+                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['milestoneName']); ?></td>
+                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['dueDate']); ?></td>
+                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['status']); ?></td>
                                 <td class="border px-4 py-2">
                                     <div class="relative inline-block text-left">
-                                        <button type="button" onclick="toggleTaskActionDropdown(this)"
+                                        <button type="button" onclick="toggleMilestoneActionDropdown(this)"
                                             class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
                                             <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
                                             <span class="font-semibold">Actions</span>
@@ -291,74 +279,73 @@ $tasks = $conn->query("SELECT * FROM projecttask");
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                             </svg>
                                         </button>
-                                        <div class="task-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                        <div class="milestone-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
                                             <button
-                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg"
-                                                onclick="openEditModal(
-                                                    '<?php echo $task['taskID']; ?>',
-                                                    '<?php echo addslashes($task['taskName']); ?>',
-                                                    '<?php echo addslashes($task['employeeName']); ?>',
-                                                    '<?php echo $task['startDate']; ?>',
-                                                    '<?php echo $task['dueDate']; ?>',
-                                                    '<?php echo $task['status']; ?>'
-                                                ); closeAllTaskActionDropdowns();"
+                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg edit-btn"
+                                                data-id="<?php echo $row['milestoneID']; ?>"
+                                                data-task="<?php echo htmlspecialchars($row['taskName']); ?>"
+                                                data-milestone="<?php echo htmlspecialchars($row['milestoneName']); ?>"
+                                                data-due="<?php echo $row['dueDate']; ?>"
+                                                data-status="<?php echo $row['status']; ?>"
+                                                onclick="openMilestoneEditModal(this); closeAllMilestoneActionDropdowns();"
                                                 type="button"
                                             >
                                                 <i class="fa-solid fa-pen-to-square"></i>
-                                                Edit Task
+                                                Edit Milestone
                                             </button>
-                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteTask(this, '<?php echo addslashes($task['taskName']); ?>');">
-                                                <input type="hidden" name="taskID" value="<?php echo $task['taskID']; ?>">
-                                                <button type="submit" name="delete_task"
+                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteMilestone(this, '<?php echo addslashes($row['milestoneName']); ?>');">
+                                                <input type="hidden" name="milestoneID" value="<?php echo $row['milestoneID']; ?>">
+                                                <button type="submit" name="delete_milestone"
                                                     class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition rounded-b-lg"
-                                                    onclick="closeAllTaskActionDropdowns();"
+                                                    onclick="closeAllMilestoneActionDropdowns();"
                                                 >
                                                     <i class="fa-solid fa-trash"></i>
-                                                    Delete Task
+                                                    Delete Milestone
                                                 </button>
                                             </form>
                                         </div>
                                     </div>
-                                </td>
                             </tr>
                         <?php endwhile; ?>
                      </tbody>
                 </table>
             </main>
-            <div id="editModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-                  <div class="bg-white rounded-lg p-6 max-w-lg w-full">
-                    <form method="POST">
-                         <input type="hidden" name="taskID" id="editTaskID">
-                         <div class="mb-4">
-                            <label class="block">Task Name:</label>
-                            <input type="text" name="taskName" id="editTaskName" class="w-full p-2 border border-gray-300 rounded" required>
-                         </div>
-                         <div class="mb-4">
-                            <label class="block">Employee Name:</label>
-                            <input type="text" name="employeeName" id="editEmployeeName" class="w-full p-2 border border-gray-300 rounded" required>
-                         </div>
-                         <div class="mb-4">
-                            <label class="block">Start Date:</label>
-                            <input type="date" name="startDate" id="editStartDate" class="w-full p-2 border border-gray-300 rounded" required>
-                         </div>
-                         <div class="mb-4">
-                            <label class="block">Due Date:</label>
-                            <input type="date" name="dueDate" id="editDueDate" class="w-full p-2 border border-gray-300 rounded" required>
-                         </div>
-                         <div class="mb-4">
-                             <label class="block">Status:</label>
-                             <select name="status" id="editStatus" class="w-full p-2 border border-gray-300 rounded">
-                                <option value="Pending">Pending</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                             </select>
-                         </div>
-                         <div class="flex justify-end space-x-2">
-                            <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
-                            <button type="submit" name="update_task" class="bg-green-500 text-white px-4 py-2 rounded">Save</button>
-                         </div>
         </div>
     </div>
+    <!-- Modal Background -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md relative">
+        <h3 class="text-xl font-bold mb-4">Edit Milestone</h3>
+        <form method="POST" id="editForm">
+            <input type="hidden" name="milestoneID" id="editMilestoneID">
+            <div class="mb-3">
+                <label for="editTaskName" class="block mb-1 font-medium">Task Name</label>
+                <input type="text" name="taskName" id="editTaskName" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div class="mb-3">
+                <label for="editMilestoneName" class="block mb-1 font-medium">Milestone Name</label>
+                <input type="text" name="milestoneName" id="editMilestoneName" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div class="mb-3">
+                <label for="editDueDate" class="block mb-1 font-medium">Due Date</label>
+                <input type="date" name="dueDate" id="editDueDate" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div class="mb-3">
+                <label for="editStatus" class="block mb-1 font-medium">Status</label>
+                <select name="status" id="editStatus" class="w-full border rounded px-3 py-2" required>
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Achieved">Achieved</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                <button type="submit" name="update_milestone" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 
     <script>
         const menu = document.querySelector('.menu-btn');
@@ -366,6 +353,39 @@ $tasks = $conn->query("SELECT * FROM projecttask");
         const main = document.querySelector('.main');
         const overlay = document.getElementById('sidebar-overlay');
         const close = document.getElementById('close-sidebar-btn');
+        const editModal = document.getElementById('editModal');const closeModalBtn = document.getElementById('closeModal');
+        const editForm = document.getElementById('editForm');
+
+    // elements nasa loob ng modal
+        const editMilestoneID = document.getElementById('editMilestoneID');
+        const editTaskName = document.getElementById('editTaskName');
+        const editMilestoneName = document.getElementById('editMilestoneName');
+        const editDueDate = document.getElementById('editDueDate');
+        const editStatus = document.getElementById('editStatus');
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            editMilestoneID.value = button.dataset.id;
+            editTaskName.value = button.dataset.task;
+            editMilestoneName.value = button.dataset.milestone;
+            editDueDate.value = button.dataset.due;
+            editStatus.value = button.dataset.status;
+
+            editModal.classList.remove('hidden');
+        });
+    });
+    // iclose yung modal
+    closeModalBtn.addEventListener('click', () => {
+        editModal.classList.add('hidden');
+    });
+
+    // Optional: Close modal clicking outside content
+    editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) {
+            editModal.classList.add('hidden');
+        }
+    });
+
 
         function closeSidebar() {
             sidebar.classList.remove('mobile-active');
@@ -445,22 +465,10 @@ $tasks = $conn->query("SELECT * FROM projecttask");
                 input.disabled = !input.disabled;
             });
         }
-        function openEditModal(taskID, taskName, employeeName, startDate, dueDate, status) {
-            document.getElementById('editTaskID').value = taskID;
-            document.getElementById('editTaskName').value = taskName;
-            document.getElementById('editEmployeeName').value = employeeName;
-            document.getElementById('editStartDate').value = startDate;
-            document.getElementById('editDueDate').value = dueDate;
-            document.getElementById('editStatus').value = status;
-            document.getElementById('editModal').classList.remove('hidden');
-        }
-        function closeEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-        }
         // modal animation script
-        function openTaskModal() {
-            const modal = document.getElementById('taskModal');
-            const content = document.getElementById('taskModalContent');
+        function openMilestoneModal() {
+            const modal = document.getElementById('milestoneModal');
+            const content = document.getElementById('milestoneModalContent');
             modal.classList.remove('hidden');
             
             // delay to trigger animation
@@ -469,9 +477,9 @@ $tasks = $conn->query("SELECT * FROM projecttask");
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
-        function closeTaskModal() {
-            const modal = document.getElementById('taskModal');
-            const content = document.getElementById('taskModalContent');
+        function closeMilestoneModal() {
+            const modal = document.getElementById('milestoneModal');
+            const content = document.getElementById('milestoneModalContent');
 
             // start reverse animation
             content.classList.remove('scale-100', 'opacity-100');
@@ -482,9 +490,9 @@ $tasks = $conn->query("SELECT * FROM projecttask");
             }, 300);
         }
 
-        function toggleTaskActionDropdown(button) {
+        function toggleMilestoneActionDropdown(button) {
             const dropdownMenu = button.nextElementSibling;
-            const allDropdowns = document.querySelectorAll('.task-action-dropdown-menu');
+            const allDropdowns = document.querySelectorAll('.milestone-action-dropdown-menu');
 
             // Close all other dropdowns
             allDropdowns.forEach(menu => {
@@ -497,28 +505,19 @@ $tasks = $conn->query("SELECT * FROM projecttask");
             dropdownMenu.classList.toggle('hidden');
         }
 
-        function closeAllTaskActionDropdowns() {
-            const allDropdowns = document.querySelectorAll('.task-action-dropdown-menu');
+        function closeAllMilestoneActionDropdowns() {
+            const allDropdowns = document.querySelectorAll('.milestone-action-dropdown-menu');
             allDropdowns.forEach(menu => {
                 menu.classList.add('hidden');
             });
         }
 
-        window.addEventListener('click', function(event) {
-            const isDropdownButton = event.target.matches('[onclick^="toggleTaskActionDropdown"]');
-            const isInsideDropdown = event.target.closest('.task-action-dropdown-menu');
-
-            if (!isDropdownButton && !isInsideDropdown) {
-                closeAllTaskActionDropdowns();
-            }
-        });
-
-        function confirmDeleteTask(form, taskName) {
-            return confirm('Are you sure you want to delete the task: "' + taskName + '"?');
+        function confirmDeleteMilestone(form, milestoneName) {
+            return confirm("Are you sure you want to delete the milestone: " + milestoneName + "?");
         }
-        function closeAllTaskActionDropdowns() {
-            document.querySelectorAll('.task-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
-     }
+        function closeAllMilestoneActionDropdowns() {
+            document.querySelectorAll('.milestone-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+      }
     </script>
 </body>
 </html>

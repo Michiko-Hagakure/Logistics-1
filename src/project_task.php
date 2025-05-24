@@ -1,89 +1,74 @@
 <?php
-include('db.php');
+include('D:\xampp\htdocs\Logistics 1\dbconn\db.php');
 
-if (isset($_POST['create_timesheet'])) {
-    $employeeName = $_POST['employeeName'];
+if (isset($_POST['create_task'])) {
     $taskName = $_POST['taskName'];
-    $workDate = $_POST['workDate'];
-    $hoursWorked = $_POST['hoursWorked'];
-    $description = $_POST['description'];
+    $employeeName = $_POST['employeeName'];
+    $startDate = $_POST['startDate'];
+    $dueDate = $_POST['dueDate'];
+    // $status = $_POST['status'];  // Tanggalin ito kasi default na 'Pending' sa DB
 
-    if (empty($employeeName) || empty($taskName) || empty($workDate) || empty($hoursWorked) || empty($description)) {
+    // check kung may duplicates (same task name and employee)
+    $check_sql = "SELECT * FROM projecttask WHERE taskName = '$taskName' AND employeeName = '$employeeName'";
+    $check_result = $conn->query($check_sql);
+
+    if ($check_result->num_rows > 0) {
+        // duplicate task
         echo "<script>
             window.onload = function() {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Missing Fields',
-                    text: 'Please fill in all the required fields.',
+                    title: 'Duplicate Task',
+                    text: 'This task already exists for the same employee.',
                     confirmButtonText: 'OK'
                 });
             };
         </script>";
     } else {
-        // check kung duplicate kaba
-        $check_sql = "SELECT * FROM timesheets 
-                      WHERE employeeName = '$employeeName' 
-                      AND taskName = '$taskName' 
-                      AND workDate = '$workDate'";
-        $check_result = $conn->query($check_sql);
+        // wala duplicates ikaw lang talaga
+        $sql = "INSERT INTO projecttask (taskName, employeeName, startDate, dueDate)
+                VALUES ('$taskName', '$employeeName', '$startDate', '$dueDate')";
 
-        if ($check_result->num_rows > 0) {
+        if ($conn->query($sql) === TRUE) {
             echo "<script>
                 window.onload = function() {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Duplicate Timesheet',
-                        text: 'A timesheet already exists for this employee, task, and date.',
+                        icon: 'success',
+                        title: 'Task Created',
+                        text: 'New task added successfully.',
                         confirmButtonText: 'OK'
                     });
                 };
             </script>";
         } else {
-            $sql = "INSERT INTO timesheets (employeeName, taskName, workDate, hoursWorked, description, createdAt, updatedAt)
-                    VALUES ('$employeeName', '$taskName', '$workDate', '$hoursWorked', '$description', NOW(), NOW())";
-
-            if ($conn->query($sql) === TRUE) {
-                echo "<script>
-                    window.onload = function() {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Timesheet Created',
-                            text: 'New timesheet entry added successfully.',
-                            confirmButtonText: 'OK'
-                        });
-                    };
-                </script>";
-            } else {
-                echo "<script>
-                    window.onload = function() {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Database Error',
-                            text: 'Something went wrong. Please try again.',
-                            confirmButtonText: 'OK'
-                        });
-                    };
-                </script>";
-            }
+            echo "<script>
+                window.onload = function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Database Error',
+                        text: 'Something went wrong. Please try again.',
+                        confirmButtonText: 'OK'
+                    });
+                };
+            </script>";
         }
     }
 }
 
-// update mo lang lagi siya 
-if (isset($_POST['update_timesheet'])) {
-    $timesheetID = $_POST['timesheetID'];
-    $employeeName = $_POST['employeeName'];
+// i update mo siya
+if (isset($_POST['update_task'])) {
+    $taskID = $_POST['taskID'];
     $taskName = $_POST['taskName'];
-    $workDate = $_POST['workDate'];
-    $hoursWorked = $_POST['hoursWorked'];
-    $description = $_POST['description'];
+    $employeeName = $_POST['employeeName'];
+    $startDate = $_POST['startDate'];
+    $dueDate = $_POST['dueDate'];
+    $status = $_POST['status'];
 
-    // check kung duplicate entry excluding current record
-    $check_sql = "SELECT * FROM timesheets 
-                  WHERE employeeName = '$employeeName' 
-                  AND taskName = '$taskName' 
-                  AND workDate = '$workDate' 
-                  AND timesheetID != '$timesheetID'";
+    // check if may ibang task with same name and employee pero ibang ID
+    $check_sql = "SELECT * FROM projecttask 
+                  WHERE taskName = '$taskName' 
+                  AND employeeName = '$employeeName' 
+                  AND taskID != '$taskID'";
     $check_result = $conn->query($check_sql);
 
     if ($check_result->num_rows > 0) {
@@ -91,57 +76,56 @@ if (isset($_POST['update_timesheet'])) {
             window.onload = function() {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Duplicate Timesheet',
-                    text: 'Another timesheet entry already exists for this employee, task, and date.',
+                    title: 'Duplicate Task',
+                    text: 'Another task with the same name and employee already exists.',
                     confirmButtonText: 'OK'
                 });
             };
         </script>";
     } else {
-        $sql = "UPDATE timesheets SET 
-                    employeeName='$employeeName',
-                    taskName='$taskName', 
-                    workDate='$workDate', 
-                    hoursWorked='$hoursWorked', 
-                    description='$description', 
-                    updatedAt=NOW()
-                WHERE timesheetID='$timesheetID'";
+        $sql = "UPDATE projecttask 
+                SET taskName='$taskName', employeeName='$employeeName',
+                    startDate='$startDate', dueDate='$dueDate', status='$status' 
+                WHERE taskID='$taskID'";
 
         if ($conn->query($sql) === TRUE) {
             echo "<script>
-                    window.onload = function() {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Timesheet Updated',
-                            text: 'Timesheet entry updated successfully.',
-                            confirmButtonText: 'OK'
-                        });
-                    };
-                  </script>";
-        }
-    }
-}
-// i delete mo siya sa buhay mo pag wala na kayo
-if (isset($_POST['delete_timesheet'])) {
-    $timesheetID = $_POST['timesheetID'];
-
-    $sql = "DELETE FROM timesheets WHERE timesheetID='$timesheetID'";
-
-    if ($conn->query($sql) === TRUE) {
-        echo "<script>
                 window.onload = function() {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Timesheet Deleted',
-                        text: 'Timesheet entry deleted successfully.',
+                        title: 'Task Updated',
+                        text: 'Task updated successfully.',
                         confirmButtonText: 'OK'
                     });
                 };
-              </script>";
+            </script>";
+        }
     }
 }
-// fetch ng data
-$timesheets = $conn->query("SELECT * FROM timesheets");
+
+
+// i delete mo siya sa buhay mo
+if (isset($_POST['delete_task'])) {
+    $taskID = $_POST['taskID'];
+
+    $sql = "DELETE FROM projecttask WHERE taskID='$taskID'";
+
+    if ($conn->query($sql) === TRUE) {
+        echo "<script>
+            window.onload = function() {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Task Deleted',
+                    text: 'Task deleted successfully.',
+                    confirmButtonText: 'OK'
+                });
+            };
+        </script>";
+    }
+}
+
+// Kunin lahat ng task
+$tasks = $conn->query("SELECT * FROM projecttask");
 ?>
 
 
@@ -163,6 +147,12 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
         .sidebar-overlay.active { display: block; }
         .menu-name::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background-color: #4E3B2A; transition: width 0.3s ease; }
         .menu-name:hover::after { width: 100%; }
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+        }
     </style>
 </head>
 <body>
@@ -233,44 +223,40 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
                 </div>
             </nav>
             <main class="px-8 py-8">
-                <h2 class="text-xl font-bold mb-4">Timesheets</h2>
-                <button onclick="openTimesheetModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                    Create Timesheets</button>
+                <h2 class="text-xl font-bold mb-4">Create Task</h2>
+                <button onclick="openTaskModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Create Task</button>
                     <!-- Modal Container -->
-                     <div id="timesheetModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
-                        <div id="timesheetModalContent" class="bg-white p-6 rounded shadow-lg w-full max-w-md relative transform scale-95 opacity-0 transition duration-300">
-                            <button onclick="closeTimesheetModal()"
-                            class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
-                            <form method="POST" class="flex flex-col gap-3"></
-                                <h2 class="text-lg font-semibold mb-2">Timesheets</h2>
-                                <div class="flex flex-col">
-                                    <label for="employeeName" class="mb-1 font-medium text-gray-700">Employee Name</label>
-                                    <input type="text" id="employeeName" name="employeeName" placeholder="Employee Name"
-                                    class="p-2 rounded border border-gray-300" required>
-                                </div>
-                                <div class="flex flex-col">
-                                    <label for="taskName" class="mb-1 font-medium text-gray-700">Task Name</label>
-                                    <input type="text" id="taskName" name="taskName" placeholder="Task Name"
-                                    class="p-2 rounded border border-gray-300" required>
-                                </div>
-                                <div class="flex flex-col">
-                                    <label for="workDate" class="mb-1 font-medium text-gray-700">Work Date</label>
-                                    <input type="date" id="workDate" name="workDate" placeholder="Work Date"
-                                    class="p-2 rounded border border-gray-300" required>
-                                </div>
-                                <div class="flex flex-col">
-                                     <label for="hoursWorked" class="mb-1 font-medium text-gray-700">Hours Worked</label>
-                                     <input type="number" id="hoursWorked" name="hoursWorked" placeholder="Hours Worked"
-                                     class="p-2 rounded border border-gray-300" required>
-                                </div>
-                                <div class="flex flex-col">
-                                    <label for="description" class="mb-1 font-medium text-gray-700">Description</label>
-                                    <textarea id="description" name="description" placeholder="Description"
-                                    class="p-3 rounded border border-gray-300 resize-y min-h-[100px] w-full" required></textarea>
-                                </div>
-                                <button type="submit" name="create_timesheet"
-                                class="bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423]">Create</button>
-                            </form>
+                     <div id="taskModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+                        <div id="taskModalContent" 
+                        class="bg-white p-6 rounded shadow-lg w-full max-w-md relative transform scale-95 opacity-0 transition duration-300">
+                        <button onclick="closeTaskModal()"
+                        class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+                        <form method="POST" class="flex flex-col gap-3">
+                            <h2 class="text-lg font-semibold mb-2">Create Task</h2>
+                             <div class="flex flex-col">
+                                <label for="taskName" class="mb-1 font-medium text-gray-700">Task Name</label>
+                                <input type="text" id="taskName" name="taskName" placeholder="Task Name"
+                                class="p-2 rounded border border-gray-300" required>
+                             </div>
+                             <div class="flex flex-col">
+                                <label for="employeeName" class="mb-1 font-medium text-gray-700">Employee Name</label>
+                                <input type="text" id="employeeName" name="employeeName" placeholder="Employee Name"
+                                class="p-2 rounded border border-gray-300" required>
+                             </div>
+                             <div class="flex flex-col">
+                                <label for="startDate" class="mb-1 font-medium text-gray-700">Start Date</label>
+                                <input type="date" id="startDate" name="startDate"
+                                class="p-2 rounded border border-gray-300" required>
+                             </div>
+                             <div class="flex flex-col">
+                                <label for="dueDate" class="mb-1 font-medium text-gray-700">Due Date</label>
+                                <input type="date" id="dueDate" name="dueDate"
+                                class="p-2 rounded border border-gray-300" required>
+                             </div>
+                            <button type="submit" name="create_task"
+                            class="bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423]">Create Task</button>
+                        </form>
                         </div>
                      </div>
                 <h2 class="text-xl font-bold mb-4">Task List</h2>
@@ -279,25 +265,25 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
 
                     <thead>
                        <tr class="bg-[#F7E6CA]">
-                       <th class="border px-4 py-2">Employee Name</th>
                        <th class="border px-4 py-2">Task Name</th>
-                       <th class="border px-4 py-2">Work Date</th>
-                       <th class="border px-4 py-2">Hours Work</th>
-                       <th class="border px-4 py-2">Description</th>
+                       <th class="border px-4 py-2">Employee Name</th>
+                       <th class="border px-4 py-2">Start Date</th>
+                       <th class="border px-4 py-2">Due Date</th>
+                       <th class="border px-4 py-2">Status</th>
                        <th class="border px-4 py-2">Actions</th>
                        </tr>
                      </thead>
                      <tbody>
-                        <?php while ($row = $timesheets->fetch_assoc()): ?>
+                        <?php while ($task = $tasks->fetch_assoc()): ?>
                             <tr>
-                                <td class="border px-4 py-2"><?= htmlspecialchars($row['employeeName']) ?></td>
-                                <td class="border px-4 py-2"><?= htmlspecialchars($row['taskName']) ?></td>
-                                <td class="border px-4 py-2"><?= htmlspecialchars($row['workDate']) ?></td>
-                                <td class="border px-4 py-2"><?= htmlspecialchars($row['hoursWorked']) ?></td>
-                                <td class="border px-4 py-2"><?= htmlspecialchars($row['description']) ?></td>
+                                <td class="border px-4 py-2"><?php echo $task['taskName']; ?></td>
+                                <td class="border px-4 py-2"><?php echo $task['employeeName']; ?></td>
+                                <td class="border px-4 py-2"><?php echo $task['startDate']; ?></td>
+                                <td class="border px-4 py-2"><?php echo $task['dueDate']; ?></td>
+                                <td class="border px-4 py-2"><?php echo $task['status']; ?></td>
                                 <td class="border px-4 py-2">
                                     <div class="relative inline-block text-left">
-                                        <button type="button" onclick="toggleTimesheetActionDropdown(this)"
+                                        <button type="button" onclick="toggleTaskActionDropdown(this)"
                                             class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
                                             <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
                                             <span class="font-semibold">Actions</span>
@@ -305,30 +291,30 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                             </svg>
                                         </button>
-                                        <div class="timesheet-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                        <div class="task-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
                                             <button
                                                 class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg"
                                                 onclick="openEditModal(
-                                                    '<?= $row['timesheetID'] ?>',
-                                                    '<?= addslashes($row['employeeName']) ?>',
-                                                    '<?= addslashes($row['taskName']) ?>',
-                                                    '<?= $row['workDate'] ?>',
-                                                    '<?= $row['hoursWorked'] ?>',
-                                                    '<?= addslashes($row['description']) ?>'
-                                                ); closeAllTimesheetActionDropdowns();"
+                                                    '<?php echo $task['taskID']; ?>',
+                                                    '<?php echo addslashes($task['taskName']); ?>',
+                                                    '<?php echo addslashes($task['employeeName']); ?>',
+                                                    '<?php echo $task['startDate']; ?>',
+                                                    '<?php echo $task['dueDate']; ?>',
+                                                    '<?php echo $task['status']; ?>'
+                                                ); closeAllTaskActionDropdowns();"
                                                 type="button"
                                             >
                                                 <i class="fa-solid fa-pen-to-square"></i>
-                                                Edit Timesheet
+                                                Edit Task
                                             </button>
-                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteTimesheet(this, '<?= addslashes($row['employeeName']) ?>');">
-                                                <input type="hidden" name="timesheetID" value="<?= $row['timesheetID'] ?>">
-                                                <button type="submit" name="delete_timesheet"
+                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteTask(this, '<?php echo addslashes($task['taskName']); ?>');">
+                                                <input type="hidden" name="taskID" value="<?php echo $task['taskID']; ?>">
+                                                <button type="submit" name="delete_task"
                                                     class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition rounded-b-lg"
-                                                    onclick="closeAllTimesheetActionDropdowns();"
+                                                    onclick="closeAllTaskActionDropdowns();"
                                                 >
                                                     <i class="fa-solid fa-trash"></i>
-                                                    Delete Timesheet
+                                                    Delete Task
                                                 </button>
                                             </form>
                                         </div>
@@ -339,53 +325,40 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
                      </tbody>
                 </table>
             </main>
+            <div id="editModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+                  <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+                    <form method="POST">
+                         <input type="hidden" name="taskID" id="editTaskID">
+                         <div class="mb-4">
+                            <label class="block">Task Name:</label>
+                            <input type="text" name="taskName" id="editTaskName" class="w-full p-2 border border-gray-300 rounded" required>
+                         </div>
+                         <div class="mb-4">
+                            <label class="block">Employee Name:</label>
+                            <input type="text" name="employeeName" id="editEmployeeName" class="w-full p-2 border border-gray-300 rounded" required>
+                         </div>
+                         <div class="mb-4">
+                            <label class="block">Start Date:</label>
+                            <input type="date" name="startDate" id="editStartDate" class="w-full p-2 border border-gray-300 rounded" required>
+                         </div>
+                         <div class="mb-4">
+                            <label class="block">Due Date:</label>
+                            <input type="date" name="dueDate" id="editDueDate" class="w-full p-2 border border-gray-300 rounded" required>
+                         </div>
+                         <div class="mb-4">
+                             <label class="block">Status:</label>
+                             <select name="status" id="editStatus" class="w-full p-2 border border-gray-300 rounded">
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                             </select>
+                         </div>
+                         <div class="flex justify-end space-x-2">
+                            <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+                            <button type="submit" name="update_task" class="bg-green-500 text-white px-4 py-2 rounded">Save</button>
+                         </div>
         </div>
     </div>
-
-    <!-- Modal Timesheet -->
-<div id="editModal" class="fixed z-50 inset-0 hidden overflow-y-auto">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-      <div class="p-4 border-b">
-        <h3 class="text-lg font-semibold">Edit Timesheet</h3>
-      </div>
-      <form method="POST" class="p-4">
-        <input type="hidden" name="timesheetID" id="editTimesheetID">
-
-         <div class="mb-4">
-          <label class="block text-sm font-medium">Employee Name</label>
-          <input type="text" name="employeeName" id="editEmployeeName" class="w-full border rounded px-3 py-2">
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium">Task Name</label>
-          <input type="text" name="taskName" id="editTaskName" class="w-full border rounded px-3 py-2">
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium">Work Date</label>
-          <input type="date" name="workDate" id="editWorkDate" class="w-full border rounded px-3 py-2">
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium">Hours Worked</label>
-          <input type="number" name="hoursWorked" id="editHoursWorked" class="w-full border rounded px-3 py-2">
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium">Description</label>
-          <textarea name="description" id="editDescription" class="w-full border rounded px-3 py-2"></textarea>
-        </div>
-
-        <div class="flex justify-end space-x-2">
-          <button type="button" onclick="closeEditModal()" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-          <button type="submit" name="update_timesheet" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 
     <script>
         const menu = document.querySelector('.menu-btn');
@@ -472,22 +445,22 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
                 input.disabled = !input.disabled;
             });
         }
-        function openEditModal(timesheetID, employeeName, taskName, workDate, hoursWorked, description) {
-            document.getElementById('editTimesheetID').value = timesheetID;
-            document.getElementById('editEmployeeName').value = employeeName;
+        function openEditModal(taskID, taskName, employeeName, startDate, dueDate, status) {
+            document.getElementById('editTaskID').value = taskID;
             document.getElementById('editTaskName').value = taskName;
-            document.getElementById('editWorkDate').value = workDate;
-            document.getElementById('editHoursWorked').value = hoursWorked;
-            document.getElementById('editDescription').value = description;
+            document.getElementById('editEmployeeName').value = employeeName;
+            document.getElementById('editStartDate').value = startDate;
+            document.getElementById('editDueDate').value = dueDate;
+            document.getElementById('editStatus').value = status;
             document.getElementById('editModal').classList.remove('hidden');
         }
         function closeEditModal() {
             document.getElementById('editModal').classList.add('hidden');
         }
         // modal animation script
-        function openTimesheetModal() {
-            const modal = document.getElementById('timesheetModal');
-            const content = document.getElementById('timesheetModalContent');
+        function openTaskModal() {
+            const modal = document.getElementById('taskModal');
+            const content = document.getElementById('taskModalContent');
             modal.classList.remove('hidden');
             
             // delay to trigger animation
@@ -496,9 +469,9 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
-        function closeTimesheetModal() {
-            const modal = document.getElementById('timesheetModal');
-            const content = document.getElementById('timesheetModalContent');
+        function closeTaskModal() {
+            const modal = document.getElementById('taskModal');
+            const content = document.getElementById('taskModalContent');
 
             // start reverse animation
             content.classList.remove('scale-100', 'opacity-100');
@@ -509,33 +482,43 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
             }, 300);
         }
 
-        function toggleTimesheetActionDropdown(button) {
+        function toggleTaskActionDropdown(button) {
             const dropdownMenu = button.nextElementSibling;
-            const allDropdowns = document.querySelectorAll('.timesheet-action-dropdown-menu');
+            const allDropdowns = document.querySelectorAll('.task-action-dropdown-menu');
 
+            // Close all other dropdowns
             allDropdowns.forEach(menu => {
                 if (menu !== dropdownMenu) {
                     menu.classList.add('hidden');
                 }
             });
 
+            // Toggle the clicked dropdown
             dropdownMenu.classList.toggle('hidden');
         }
 
-        function closeAllTimesheetActionDropdowns() {
-            const allDropdowns = document.querySelectorAll('.timesheet-action-dropdown-menu');
+        function closeAllTaskActionDropdowns() {
+            const allDropdowns = document.querySelectorAll('.task-action-dropdown-menu');
             allDropdowns.forEach(menu => {
                 menu.classList.add('hidden');
             });
         }
 
-        function confirmDeleteTimesheet(form, employeeName) {
-            const confirmed = confirm(`Are you sure you want to delete the timesheet for ${employeeName}?`);
-            return confirmed;
+        window.addEventListener('click', function(event) {
+            const isDropdownButton = event.target.matches('[onclick^="toggleTaskActionDropdown"]');
+            const isInsideDropdown = event.target.closest('.task-action-dropdown-menu');
+
+            if (!isDropdownButton && !isInsideDropdown) {
+                closeAllTaskActionDropdowns();
+            }
+        });
+
+        function confirmDeleteTask(form, taskName) {
+            return confirm('Are you sure you want to delete the task: "' + taskName + '"?');
         }
-        function closeAllTimesheetActionDropdowns() {
-            document.querySelectorAll('.timesheet-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
-        }
+        function closeAllTaskActionDropdowns() {
+            document.querySelectorAll('.task-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+     }
     </script>
 </body>
 </html>

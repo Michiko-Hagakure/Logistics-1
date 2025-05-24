@@ -1,13 +1,14 @@
 <?php
-include('db.php');
+include('D:\xampp\htdocs\Logistics 1\dbconn\db.php');
 
-if (isset($_POST['create_milestone'])) {
+if (isset($_POST['create_timesheet'])) {
+    $employeeName = $_POST['employeeName'];
     $taskName = $_POST['taskName'];
-    $milestoneName = $_POST['milestoneName'];
-    $dueDate = $_POST['dueDate'];
-    $status = 'Not Started';  // dito mo na nilagay ang default status
+    $workDate = $_POST['workDate'];
+    $hoursWorked = $_POST['hoursWorked'];
+    $description = $_POST['description'];
 
-    if (empty($taskName) || empty($milestoneName) || empty($dueDate)) {
+    if (empty($employeeName) || empty($taskName) || empty($workDate) || empty($hoursWorked) || empty($description)) {
         echo "<script>
             window.onload = function() {
                 Swal.fire({
@@ -19,8 +20,11 @@ if (isset($_POST['create_milestone'])) {
             };
         </script>";
     } else {
-        // Check for duplicates
-        $check_sql = "SELECT * FROM milestones WHERE taskName = '$taskName' AND milestoneName = '$milestoneName'";
+        // check kung duplicate kaba
+        $check_sql = "SELECT * FROM timesheets 
+                      WHERE employeeName = '$employeeName' 
+                      AND taskName = '$taskName' 
+                      AND workDate = '$workDate'";
         $check_result = $conn->query($check_sql);
 
         if ($check_result->num_rows > 0) {
@@ -28,25 +32,23 @@ if (isset($_POST['create_milestone'])) {
                 window.onload = function() {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Duplicate Milestone',
-                        text: 'Milestone already exists for this task.',
+                        title: 'Duplicate Timesheet',
+                        text: 'A timesheet already exists for this employee, task, and date.',
                         confirmButtonText: 'OK'
                     });
                 };
             </script>";
         } else {
-            $defaultProjectID = 1;
-
-            $sql = "INSERT INTO milestones (projectID, taskName, milestoneName, dueDate, status, createdAt, updatedAt)
-                    VALUES ('$defaultProjectID', '$taskName', '$milestoneName', '$dueDate', '$status', NOW(), NOW())";
+            $sql = "INSERT INTO timesheets (employeeName, taskName, workDate, hoursWorked, description, createdAt, updatedAt)
+                    VALUES ('$employeeName', '$taskName', '$workDate', '$hoursWorked', '$description', NOW(), NOW())";
 
             if ($conn->query($sql) === TRUE) {
                 echo "<script>
                     window.onload = function() {
                         Swal.fire({
                             icon: 'success',
-                            title: 'Milestone Created',
-                            text: 'New milestone added successfully.',
+                            title: 'Timesheet Created',
+                            text: 'New timesheet entry added successfully.',
                             confirmButtonText: 'OK'
                         });
                     };
@@ -67,18 +69,21 @@ if (isset($_POST['create_milestone'])) {
     }
 }
 
-// i update mo siya sa buhay mo
-if (isset($_POST['update_milestone'])) {
-    $milestoneID = $_POST['milestoneID'];
+// update mo lang lagi siya 
+if (isset($_POST['update_timesheet'])) {
+    $timesheetID = $_POST['timesheetID'];
+    $employeeName = $_POST['employeeName'];
     $taskName = $_POST['taskName'];
-    $milestoneName = $_POST['milestoneName'];
-    $dueDate = $_POST['dueDate'];
-    $status = $_POST['status'];
+    $workDate = $_POST['workDate'];
+    $hoursWorked = $_POST['hoursWorked'];
+    $description = $_POST['description'];
 
-    // check kung duplicates (excluding current milestone)
-    $check_sql = "SELECT * FROM milestones 
-                  WHERE taskName = '$taskName' AND milestoneName = '$milestoneName' 
-                  AND milestoneID != '$milestoneID'";
+    // check kung duplicate entry excluding current record
+    $check_sql = "SELECT * FROM timesheets 
+                  WHERE employeeName = '$employeeName' 
+                  AND taskName = '$taskName' 
+                  AND workDate = '$workDate' 
+                  AND timesheetID != '$timesheetID'";
     $check_result = $conn->query($check_sql);
 
     if ($check_result->num_rows > 0) {
@@ -86,25 +91,29 @@ if (isset($_POST['update_milestone'])) {
             window.onload = function() {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Duplicate Milestone',
-                    text: 'Another milestone with the same name already exists for this task.',
+                    title: 'Duplicate Timesheet',
+                    text: 'Another timesheet entry already exists for this employee, task, and date.',
                     confirmButtonText: 'OK'
                 });
             };
         </script>";
     } else {
-        $sql = "UPDATE milestones 
-                SET taskName='$taskName', milestoneName='$milestoneName', 
-                    dueDate='$dueDate', status='$status', updatedAt=NOW()
-                WHERE milestoneID='$milestoneID'";
+        $sql = "UPDATE timesheets SET 
+                    employeeName='$employeeName',
+                    taskName='$taskName', 
+                    workDate='$workDate', 
+                    hoursWorked='$hoursWorked', 
+                    description='$description', 
+                    updatedAt=NOW()
+                WHERE timesheetID='$timesheetID'";
 
         if ($conn->query($sql) === TRUE) {
             echo "<script>
                     window.onload = function() {
                         Swal.fire({
                             icon: 'success',
-                            title: 'Milestone Updated',
-                            text: 'Milestone updated successfully.',
+                            title: 'Timesheet Updated',
+                            text: 'Timesheet entry updated successfully.',
                             confirmButtonText: 'OK'
                         });
                     };
@@ -112,28 +121,29 @@ if (isset($_POST['update_milestone'])) {
         }
     }
 }
+// i delete mo siya sa buhay mo pag wala na kayo
+if (isset($_POST['delete_timesheet'])) {
+    $timesheetID = $_POST['timesheetID'];
 
-
-if (isset($_POST['delete_milestone'])) {
-    $milestoneID = $_POST['milestoneID'];
-
-    $sql = "DELETE FROM milestones WHERE milestoneID='$milestoneID'";
+    $sql = "DELETE FROM timesheets WHERE timesheetID='$timesheetID'";
 
     if ($conn->query($sql) === TRUE) {
         echo "<script>
                 window.onload = function() {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Milestone Deleted',
-                        text: 'Milestone deleted successfully.',
+                        title: 'Timesheet Deleted',
+                        text: 'Timesheet entry deleted successfully.',
                         confirmButtonText: 'OK'
                     });
                 };
               </script>";
     }
 }
-$milestones = $conn->query("SELECT * FROM milestones");
+// fetch ng data
+$timesheets = $conn->query("SELECT * FROM timesheets");
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -223,55 +233,71 @@ $milestones = $conn->query("SELECT * FROM milestones");
                 </div>
             </nav>
             <main class="px-8 py-8">
-                <h2 class="text-xl font-bold mb-4">Milestones</h2>
-                <button onclick="openMilestoneModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                    Create Milestone</button>
+                <h2 class="text-xl font-bold mb-4">Timesheets</h2>
+                <button onclick="openTimesheetModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Create Timesheets</button>
                     <!-- Modal Container -->
-                     <div id="milestoneModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
-                        <div id="milestoneModalContent" class="bg-white p-6 rounded shadow-lg w-full max-w-md relative transform scale-95 opacity-0 transition duration-300">
-                            <button onclick="closeMilestoneModal()"
-                             class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
-                             <form method="POST" class="flex flex-col gap-3">
+                     <div id="timesheetModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+                        <div id="timesheetModalContent" class="bg-white p-6 rounded shadow-lg w-full max-w-md relative transform scale-95 opacity-0 transition duration-300">
+                            <button onclick="closeTimesheetModal()"
+                            class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+                            <form method="POST" class="flex flex-col gap-3"></
+                                <h2 class="text-lg font-semibold mb-2">Timesheets</h2>
+                                <div class="flex flex-col">
+                                    <label for="employeeName" class="mb-1 font-medium text-gray-700">Employee Name</label>
+                                    <input type="text" id="employeeName" name="employeeName" placeholder="Employee Name"
+                                    class="p-2 rounded border border-gray-300" required>
+                                </div>
                                 <div class="flex flex-col">
                                     <label for="taskName" class="mb-1 font-medium text-gray-700">Task Name</label>
-                                    <input type="text" id="taskName" name="taskName" placeholder="Task Name" class="p-2 rounded border border-gray-300" required>
+                                    <input type="text" id="taskName" name="taskName" placeholder="Task Name"
+                                    class="p-2 rounded border border-gray-300" required>
                                 </div>
                                 <div class="flex flex-col">
-                                    <label for="milestoneName" class="mb-1 font-medium text-gray-700">Milestone Name</label>
-                                    <input type="text" id="milestoneName" name="milestoneName" placeholder="Milestone Name" class="p-2 rounded border border-gray-300" required>
+                                    <label for="workDate" class="mb-1 font-medium text-gray-700">Work Date</label>
+                                    <input type="date" id="workDate" name="workDate" placeholder="Work Date"
+                                    class="p-2 rounded border border-gray-300" required>
                                 </div>
                                 <div class="flex flex-col">
-                                    <label for="dueDate" class="mb-1 font-medium text-gray-700">Due Date</label>
-                                    <input type="date" id="dueDate" name="dueDate" class="p-2 rounded border border-gray-300" required>
+                                     <label for="hoursWorked" class="mb-1 font-medium text-gray-700">Hours Worked</label>
+                                     <input type="number" id="hoursWorked" name="hoursWorked" placeholder="Hours Worked"
+                                     class="p-2 rounded border border-gray-300" required>
                                 </div>
-                                <button type="submit" name="create_milestone"
+                                <div class="flex flex-col">
+                                    <label for="description" class="mb-1 font-medium text-gray-700">Description</label>
+                                    <textarea id="description" name="description" placeholder="Description"
+                                    class="p-3 rounded border border-gray-300 resize-y min-h-[100px] w-full" required></textarea>
+                                </div>
+                                <button type="submit" name="create_timesheet"
                                 class="bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423]">Create</button>
-                             </form>
+                            </form>
                         </div>
                      </div>
-                <h2 class="text-xl font-bold mb-4">Milestones List</h2>
+                <h2 class="text-xl font-bold mb-4">Task List</h2>
 
                 <table class="min-w-full table-auto border-collapse">
 
                     <thead>
                        <tr class="bg-[#F7E6CA]">
+                       <th class="border px-4 py-2">Employee Name</th>
                        <th class="border px-4 py-2">Task Name</th>
-                       <th class="border px-4 py-2">Milestone Name</th>
-                       <th class="border px-4 py-2">Due Date</th>
-                       <th class="border px-4 py-2">Status</th>
+                       <th class="border px-4 py-2">Work Date</th>
+                       <th class="border px-4 py-2">Hours Work</th>
+                       <th class="border px-4 py-2">Description</th>
                        <th class="border px-4 py-2">Actions</th>
                        </tr>
                      </thead>
                      <tbody>
-                        <?php while ($row = $milestones->fetch_assoc()): ?>
+                        <?php while ($row = $timesheets->fetch_assoc()): ?>
                             <tr>
-                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['taskName']); ?></td>
-                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['milestoneName']); ?></td>
-                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['dueDate']); ?></td>
-                                <td class="border px-4 py-2"><?php echo htmlspecialchars($row['status']); ?></td>
+                                <td class="border px-4 py-2"><?= htmlspecialchars($row['employeeName']) ?></td>
+                                <td class="border px-4 py-2"><?= htmlspecialchars($row['taskName']) ?></td>
+                                <td class="border px-4 py-2"><?= htmlspecialchars($row['workDate']) ?></td>
+                                <td class="border px-4 py-2"><?= htmlspecialchars($row['hoursWorked']) ?></td>
+                                <td class="border px-4 py-2"><?= htmlspecialchars($row['description']) ?></td>
                                 <td class="border px-4 py-2">
                                     <div class="relative inline-block text-left">
-                                        <button type="button" onclick="toggleMilestoneActionDropdown(this)"
+                                        <button type="button" onclick="toggleTimesheetActionDropdown(this)"
                                             class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
                                             <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
                                             <span class="font-semibold">Actions</span>
@@ -279,32 +305,35 @@ $milestones = $conn->query("SELECT * FROM milestones");
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                             </svg>
                                         </button>
-                                        <div class="milestone-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                        <div class="timesheet-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
                                             <button
-                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg edit-btn"
-                                                data-id="<?php echo $row['milestoneID']; ?>"
-                                                data-task="<?php echo htmlspecialchars($row['taskName']); ?>"
-                                                data-milestone="<?php echo htmlspecialchars($row['milestoneName']); ?>"
-                                                data-due="<?php echo $row['dueDate']; ?>"
-                                                data-status="<?php echo $row['status']; ?>"
-                                                onclick="openMilestoneEditModal(this); closeAllMilestoneActionDropdowns();"
+                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg"
+                                                onclick="openEditModal(
+                                                    '<?= $row['timesheetID'] ?>',
+                                                    '<?= addslashes($row['employeeName']) ?>',
+                                                    '<?= addslashes($row['taskName']) ?>',
+                                                    '<?= $row['workDate'] ?>',
+                                                    '<?= $row['hoursWorked'] ?>',
+                                                    '<?= addslashes($row['description']) ?>'
+                                                ); closeAllTimesheetActionDropdowns();"
                                                 type="button"
                                             >
                                                 <i class="fa-solid fa-pen-to-square"></i>
-                                                Edit Milestone
+                                                Edit Timesheet
                                             </button>
-                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteMilestone(this, '<?php echo addslashes($row['milestoneName']); ?>');">
-                                                <input type="hidden" name="milestoneID" value="<?php echo $row['milestoneID']; ?>">
-                                                <button type="submit" name="delete_milestone"
+                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteTimesheet(this, '<?= addslashes($row['employeeName']) ?>');">
+                                                <input type="hidden" name="timesheetID" value="<?= $row['timesheetID'] ?>">
+                                                <button type="submit" name="delete_timesheet"
                                                     class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition rounded-b-lg"
-                                                    onclick="closeAllMilestoneActionDropdowns();"
+                                                    onclick="closeAllTimesheetActionDropdowns();"
                                                 >
                                                     <i class="fa-solid fa-trash"></i>
-                                                    Delete Milestone
+                                                    Delete Timesheet
                                                 </button>
                                             </form>
                                         </div>
                                     </div>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                      </tbody>
@@ -312,38 +341,49 @@ $milestones = $conn->query("SELECT * FROM milestones");
             </main>
         </div>
     </div>
-    <!-- Modal Background -->
-<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md relative">
-        <h3 class="text-xl font-bold mb-4">Edit Milestone</h3>
-        <form method="POST" id="editForm">
-            <input type="hidden" name="milestoneID" id="editMilestoneID">
-            <div class="mb-3">
-                <label for="editTaskName" class="block mb-1 font-medium">Task Name</label>
-                <input type="text" name="taskName" id="editTaskName" class="w-full border rounded px-3 py-2" required>
-            </div>
-            <div class="mb-3">
-                <label for="editMilestoneName" class="block mb-1 font-medium">Milestone Name</label>
-                <input type="text" name="milestoneName" id="editMilestoneName" class="w-full border rounded px-3 py-2" required>
-            </div>
-            <div class="mb-3">
-                <label for="editDueDate" class="block mb-1 font-medium">Due Date</label>
-                <input type="date" name="dueDate" id="editDueDate" class="w-full border rounded px-3 py-2" required>
-            </div>
-            <div class="mb-3">
-                <label for="editStatus" class="block mb-1 font-medium">Status</label>
-                <select name="status" id="editStatus" class="w-full border rounded px-3 py-2" required>
-                    <option value="Not Started">Not Started</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Achieved">Achieved</option>
-                </select>
-            </div>
-            <div class="flex justify-end space-x-2">
-                <button type="button" id="closeModal" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
-                <button type="submit" name="update_milestone" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save</button>
-            </div>
-        </form>
+
+    <!-- Modal Timesheet -->
+<div id="editModal" class="fixed z-50 inset-0 hidden overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div class="p-4 border-b">
+        <h3 class="text-lg font-semibold">Edit Timesheet</h3>
+      </div>
+      <form method="POST" class="p-4">
+        <input type="hidden" name="timesheetID" id="editTimesheetID">
+
+         <div class="mb-4">
+          <label class="block text-sm font-medium">Employee Name</label>
+          <input type="text" name="employeeName" id="editEmployeeName" class="w-full border rounded px-3 py-2">
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Task Name</label>
+          <input type="text" name="taskName" id="editTaskName" class="w-full border rounded px-3 py-2">
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Work Date</label>
+          <input type="date" name="workDate" id="editWorkDate" class="w-full border rounded px-3 py-2">
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Hours Worked</label>
+          <input type="number" name="hoursWorked" id="editHoursWorked" class="w-full border rounded px-3 py-2">
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium">Description</label>
+          <textarea name="description" id="editDescription" class="w-full border rounded px-3 py-2"></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="closeEditModal()" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+          <button type="submit" name="update_timesheet" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 
@@ -353,39 +393,6 @@ $milestones = $conn->query("SELECT * FROM milestones");
         const main = document.querySelector('.main');
         const overlay = document.getElementById('sidebar-overlay');
         const close = document.getElementById('close-sidebar-btn');
-        const editModal = document.getElementById('editModal');const closeModalBtn = document.getElementById('closeModal');
-        const editForm = document.getElementById('editForm');
-
-    // elements nasa loob ng modal
-        const editMilestoneID = document.getElementById('editMilestoneID');
-        const editTaskName = document.getElementById('editTaskName');
-        const editMilestoneName = document.getElementById('editMilestoneName');
-        const editDueDate = document.getElementById('editDueDate');
-        const editStatus = document.getElementById('editStatus');
-
-        document.querySelectorAll('.edit-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            editMilestoneID.value = button.dataset.id;
-            editTaskName.value = button.dataset.task;
-            editMilestoneName.value = button.dataset.milestone;
-            editDueDate.value = button.dataset.due;
-            editStatus.value = button.dataset.status;
-
-            editModal.classList.remove('hidden');
-        });
-    });
-    // iclose yung modal
-    closeModalBtn.addEventListener('click', () => {
-        editModal.classList.add('hidden');
-    });
-
-    // Optional: Close modal clicking outside content
-    editModal.addEventListener('click', (e) => {
-        if (e.target === editModal) {
-            editModal.classList.add('hidden');
-        }
-    });
-
 
         function closeSidebar() {
             sidebar.classList.remove('mobile-active');
@@ -465,10 +472,22 @@ $milestones = $conn->query("SELECT * FROM milestones");
                 input.disabled = !input.disabled;
             });
         }
+        function openEditModal(timesheetID, employeeName, taskName, workDate, hoursWorked, description) {
+            document.getElementById('editTimesheetID').value = timesheetID;
+            document.getElementById('editEmployeeName').value = employeeName;
+            document.getElementById('editTaskName').value = taskName;
+            document.getElementById('editWorkDate').value = workDate;
+            document.getElementById('editHoursWorked').value = hoursWorked;
+            document.getElementById('editDescription').value = description;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
         // modal animation script
-        function openMilestoneModal() {
-            const modal = document.getElementById('milestoneModal');
-            const content = document.getElementById('milestoneModalContent');
+        function openTimesheetModal() {
+            const modal = document.getElementById('timesheetModal');
+            const content = document.getElementById('timesheetModalContent');
             modal.classList.remove('hidden');
             
             // delay to trigger animation
@@ -477,9 +496,9 @@ $milestones = $conn->query("SELECT * FROM milestones");
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
-        function closeMilestoneModal() {
-            const modal = document.getElementById('milestoneModal');
-            const content = document.getElementById('milestoneModalContent');
+        function closeTimesheetModal() {
+            const modal = document.getElementById('timesheetModal');
+            const content = document.getElementById('timesheetModalContent');
 
             // start reverse animation
             content.classList.remove('scale-100', 'opacity-100');
@@ -490,34 +509,33 @@ $milestones = $conn->query("SELECT * FROM milestones");
             }, 300);
         }
 
-        function toggleMilestoneActionDropdown(button) {
+        function toggleTimesheetActionDropdown(button) {
             const dropdownMenu = button.nextElementSibling;
-            const allDropdowns = document.querySelectorAll('.milestone-action-dropdown-menu');
+            const allDropdowns = document.querySelectorAll('.timesheet-action-dropdown-menu');
 
-            // Close all other dropdowns
             allDropdowns.forEach(menu => {
                 if (menu !== dropdownMenu) {
                     menu.classList.add('hidden');
                 }
             });
 
-            // Toggle the clicked dropdown
             dropdownMenu.classList.toggle('hidden');
         }
 
-        function closeAllMilestoneActionDropdowns() {
-            const allDropdowns = document.querySelectorAll('.milestone-action-dropdown-menu');
+        function closeAllTimesheetActionDropdowns() {
+            const allDropdowns = document.querySelectorAll('.timesheet-action-dropdown-menu');
             allDropdowns.forEach(menu => {
                 menu.classList.add('hidden');
             });
         }
 
-        function confirmDeleteMilestone(form, milestoneName) {
-            return confirm("Are you sure you want to delete the milestone: " + milestoneName + "?");
+        function confirmDeleteTimesheet(form, employeeName) {
+            const confirmed = confirm(`Are you sure you want to delete the timesheet for ${employeeName}?`);
+            return confirmed;
         }
-        function closeAllMilestoneActionDropdowns() {
-            document.querySelectorAll('.milestone-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
-      }
+        function closeAllTimesheetActionDropdowns() {
+            document.querySelectorAll('.timesheet-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+        }
     </script>
 </body>
 </html>
