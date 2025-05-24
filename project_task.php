@@ -282,18 +282,44 @@ $tasks = $conn->query("SELECT * FROM projecttask");
                                 <td class="border px-4 py-2"><?php echo $task['dueDate']; ?></td>
                                 <td class="border px-4 py-2"><?php echo $task['status']; ?></td>
                                 <td class="border px-4 py-2">
-                                    <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="openEditModal(
-                                    '<?php echo $task['taskID']; ?>',
-                                    '<?php echo $task['taskName']; ?>',
-                                    '<?php echo $task['employeeName']; ?>',
-                                    '<?php echo $task['startDate']; ?>',
-                                    '<?php echo $task['dueDate']; ?>',
-                                    '<?php echo $task['status']; ?>'
-                                )">Edit</button>
-                                <form method="POST" style="display:inline;">
-                                    <input type="hidden" name="taskID" value="<?php echo $task['taskID']; ?>">
-                                    <button type="submit" name="delete_task" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onclick="return confirm('Delete this task?')">Delete</button>
-                                </form>
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" onclick="toggleTaskActionDropdown(this)"
+                                            class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
+                                            <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
+                                            <span class="font-semibold">Actions</span>
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                        <div class="task-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                            <button
+                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg"
+                                                onclick="openEditModal(
+                                                    '<?php echo $task['taskID']; ?>',
+                                                    '<?php echo addslashes($task['taskName']); ?>',
+                                                    '<?php echo addslashes($task['employeeName']); ?>',
+                                                    '<?php echo $task['startDate']; ?>',
+                                                    '<?php echo $task['dueDate']; ?>',
+                                                    '<?php echo $task['status']; ?>'
+                                                ); closeAllTaskActionDropdowns();"
+                                                type="button"
+                                            >
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                                Edit Task
+                                            </button>
+                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteTask(this, '<?php echo addslashes($task['taskName']); ?>');">
+                                                <input type="hidden" name="taskID" value="<?php echo $task['taskID']; ?>">
+                                                <button type="submit" name="delete_task"
+                                                    class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition rounded-b-lg"
+                                                    onclick="closeAllTaskActionDropdowns();"
+                                                >
+                                                    <i class="fa-solid fa-trash"></i>
+                                                    Delete Task
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                      </tbody>
@@ -455,6 +481,44 @@ $tasks = $conn->query("SELECT * FROM projecttask");
             modal.classList.add('hidden');
             }, 300);
         }
+
+        function toggleTaskActionDropdown(button) {
+            const dropdownMenu = button.nextElementSibling;
+            const allDropdowns = document.querySelectorAll('.task-action-dropdown-menu');
+
+            // Close all other dropdowns
+            allDropdowns.forEach(menu => {
+                if (menu !== dropdownMenu) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            // Toggle the clicked dropdown
+            dropdownMenu.classList.toggle('hidden');
+        }
+
+        function closeAllTaskActionDropdowns() {
+            const allDropdowns = document.querySelectorAll('.task-action-dropdown-menu');
+            allDropdowns.forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+
+        window.addEventListener('click', function(event) {
+            const isDropdownButton = event.target.matches('[onclick^="toggleTaskActionDropdown"]');
+            const isInsideDropdown = event.target.closest('.task-action-dropdown-menu');
+
+            if (!isDropdownButton && !isInsideDropdown) {
+                closeAllTaskActionDropdowns();
+            }
+        });
+
+        function confirmDeleteTask(form, taskName) {
+            return confirm('Are you sure you want to delete the task: "' + taskName + '"?');
+        }
+        function closeAllTaskActionDropdowns() {
+            document.querySelectorAll('.task-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+     }
     </script>
 </body>
 </html>

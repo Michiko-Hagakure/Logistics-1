@@ -337,25 +337,53 @@ $projects = $conn->query("SELECT * FROM projects");
                                 <td class="border px-4 py-2"><?php echo htmlspecialchars($project['status']); ?></td>
                                 <td class="border px-4 py-2">₱<?php echo htmlspecialchars($project['budget']); ?></td>
                                 <td class="border px-4 py-2">
-                                    <button
-                                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                                         onclick="openEditModal(
-                                          '<?php echo $project['projectID']; ?>',
-                                          '<?php echo addslashes($project['projectName']); ?>',
-                                          '<?php echo $project['startDate']; ?>',
-                                          '<?php echo $project['endDate']; ?>',
-                                          '<?php echo $project['status']; ?>',
-                                          '<?php echo $project['budget']; ?>'
-                                        )"
-                                    >Edit</button>
-                                    <form method="POST" onsubmit="return confirm('Are you sure you want to delete this project?')" style="display:inline;">
-                                        <input type="hidden" name="projectID" value="<?php echo $project['projectID']; ?>">
-                                        <button type="submit" name="delete_project" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Delete</button>
-                                    </form>
-                                    <form method="POST" class="inline">
-                                        <input type="hidden" name="projectID" value="<?= $project['projectID'] ?>">
-                                        <button type="submit" name="request_budget" class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Request Budget</button>
-                                    </form>
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" onclick="toggleActionDropdown(this)"
+                                            class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
+                                            <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
+                                            <span class="font-semibold">Actions</span>
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                        <div class="action-dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                            <button
+                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg"
+                                                onclick="openEditModal(
+                                                    '<?php echo $project['projectID']; ?>',
+                                                    '<?php echo addslashes($project['projectName']); ?>',
+                                                    '<?php echo $project['startDate']; ?>',
+                                                    '<?php echo $project['endDate']; ?>',
+                                                    '<?php echo $project['status']; ?>',
+                                                    '<?php echo $project['budget']; ?>'
+                                                ); closeAllActionDropdowns();"
+                                                type="button"
+                                            >
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                                Edit Project
+                                            </button>
+                                            <form method="POST" onsubmit="return confirm('Are you sure you want to delete this project?')" class="w-full">
+                                                <input type="hidden" name="projectID" value="<?php echo $project['projectID']; ?>">
+                                                <button type="submit" name="delete_project"
+                                                    class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition"
+                                                    onclick="closeAllActionDropdowns();"
+                                                >
+                                                    <i class="fa-solid fa-trash"></i>
+                                                    Delete Project
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="w-full">
+                                                <input type="hidden" name="projectID" value="<?= $project['projectID'] ?>">
+                                                <button type="submit" name="request_budget"
+                                                    class="w-full flex items-center gap-2 px-4 py-3 text-green-700 hover:bg-green-50 transition rounded-b-lg"
+                                                    onclick="closeAllActionDropdowns();"
+                                                >
+                                                    <i class="fa-solid fa-coins"></i>
+                                                    Request Budget
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -508,6 +536,21 @@ $projects = $conn->query("SELECT * FROM projects");
             setTimeout(() => {
             modal.classList.add('hidden');
             }, 300);
+        }
+        function toggleActionDropdown(btn) {
+            closeAllActionDropdowns();
+            const menu = btn.parentElement.querySelector('.action-dropdown-menu');
+            menu.classList.toggle('hidden');
+            document.addEventListener('click', function handler(e) {
+
+               if (!btn.parentElement.contains(e.target)) {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', handler);
+        }
+    });
+        }
+        function closeAllActionDropdowns() {
+             document.querySelectorAll('.action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
         }
     </script>
 </body>

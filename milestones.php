@@ -270,18 +270,41 @@ $milestones = $conn->query("SELECT * FROM milestones");
                                 <td class="border px-4 py-2"><?php echo htmlspecialchars($row['dueDate']); ?></td>
                                 <td class="border px-4 py-2"><?php echo htmlspecialchars($row['status']); ?></td>
                                 <td class="border px-4 py-2">
-                                    <button 
-                                          class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 edit-btn"
-                                          data-id="<?php echo $row['milestoneID']; ?>"
-                                          data-task="<?php echo htmlspecialchars($row['taskName']); ?>"
-                                          data-milestone="<?php echo htmlspecialchars($row['milestoneName']); ?>"
-                                          data-due="<?php echo $row['dueDate']; ?>"
-                                          data-status="<?php echo $row['status']; ?>"
-                                    >Edit</button>
-                                    <form method="POST" class="inline-block" onsubmit="return confirm('Delete this milestone?')">
-                                        <input type="hidden" name="milestoneID" value="<?php echo $row['milestoneID']; ?>">
-                                        <button type="submit" name="delete_milestone" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
-                                    </form>
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" onclick="toggleMilestoneActionDropdown(this)"
+                                            class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
+                                            <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
+                                            <span class="font-semibold">Actions</span>
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                        <div class="milestone-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                            <button
+                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg edit-btn"
+                                                data-id="<?php echo $row['milestoneID']; ?>"
+                                                data-task="<?php echo htmlspecialchars($row['taskName']); ?>"
+                                                data-milestone="<?php echo htmlspecialchars($row['milestoneName']); ?>"
+                                                data-due="<?php echo $row['dueDate']; ?>"
+                                                data-status="<?php echo $row['status']; ?>"
+                                                onclick="openMilestoneEditModal(this); closeAllMilestoneActionDropdowns();"
+                                                type="button"
+                                            >
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                                Edit Milestone
+                                            </button>
+                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteMilestone(this, '<?php echo addslashes($row['milestoneName']); ?>');">
+                                                <input type="hidden" name="milestoneID" value="<?php echo $row['milestoneID']; ?>">
+                                                <button type="submit" name="delete_milestone"
+                                                    class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition rounded-b-lg"
+                                                    onclick="closeAllMilestoneActionDropdowns();"
+                                                >
+                                                    <i class="fa-solid fa-trash"></i>
+                                                    Delete Milestone
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                             </tr>
                         <?php endwhile; ?>
                      </tbody>
@@ -466,6 +489,35 @@ $milestones = $conn->query("SELECT * FROM milestones");
             modal.classList.add('hidden');
             }, 300);
         }
+
+        function toggleMilestoneActionDropdown(button) {
+            const dropdownMenu = button.nextElementSibling;
+            const allDropdowns = document.querySelectorAll('.milestone-action-dropdown-menu');
+
+            // Close all other dropdowns
+            allDropdowns.forEach(menu => {
+                if (menu !== dropdownMenu) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            // Toggle the clicked dropdown
+            dropdownMenu.classList.toggle('hidden');
+        }
+
+        function closeAllMilestoneActionDropdowns() {
+            const allDropdowns = document.querySelectorAll('.milestone-action-dropdown-menu');
+            allDropdowns.forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+
+        function confirmDeleteMilestone(form, milestoneName) {
+            return confirm("Are you sure you want to delete the milestone: " + milestoneName + "?");
+        }
+        function closeAllMilestoneActionDropdowns() {
+            document.querySelectorAll('.milestone-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+      }
     </script>
 </body>
 </html>

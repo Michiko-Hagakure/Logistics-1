@@ -296,20 +296,43 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
                                 <td class="border px-4 py-2"><?= htmlspecialchars($row['hoursWorked']) ?></td>
                                 <td class="border px-4 py-2"><?= htmlspecialchars($row['description']) ?></td>
                                 <td class="border px-4 py-2">
-                                    <button  type="button" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                                          onclick="openEditModal(
-                                          '<?= $row['timesheetID'] ?>',
-                                          '<?= addslashes($row['employeeName']) ?>',
-                                          '<?= addslashes($row['taskName']) ?>',
-                                          '<?= $row['workDate'] ?>',
-                                          '<?= $row['hoursWorked'] ?>',
-                                          '<?= addslashes($row['description']) ?>'
-                                       )"
-                                   >Edit</button>
-                                   <form method="POST" class="inline-block" onsubmit="return confirm('Delete this?')">
-                                        <input type="hidden" name="timesheetID" value="<?php echo $row['timesheetID']; ?>">
-                                        <button type="submit" name="delete_timesheet" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
-                                    </form>
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" onclick="toggleTimesheetActionDropdown(this)"
+                                            class="flex items-center gap-2 bg-[#4E3B2A] text-white px-4 py-2 rounded hover:bg-[#594423] focus:outline-none shadow-lg">
+                                            <img src="Logo/PNG/Logo.png" alt="Logo" class="h-6 w-6 rounded-full border border-white shadow" />
+                                            <span class="font-semibold">Actions</span>
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                        <div class="timesheet-action-dropdown-menu absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl z-50 hidden border border-[#F7E6CA]">
+                                            <button
+                                                class="w-full flex items-center gap-2 px-4 py-3 text-[#4E3B2A] hover:bg-[#F7E6CA] transition rounded-t-lg"
+                                                onclick="openEditModal(
+                                                    '<?= $row['timesheetID'] ?>',
+                                                    '<?= addslashes($row['employeeName']) ?>',
+                                                    '<?= addslashes($row['taskName']) ?>',
+                                                    '<?= $row['workDate'] ?>',
+                                                    '<?= $row['hoursWorked'] ?>',
+                                                    '<?= addslashes($row['description']) ?>'
+                                                ); closeAllTimesheetActionDropdowns();"
+                                                type="button"
+                                            >
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                                Edit Timesheet
+                                            </button>
+                                            <form method="POST" class="w-full" onsubmit="return confirmDeleteTimesheet(this, '<?= addslashes($row['employeeName']) ?>');">
+                                                <input type="hidden" name="timesheetID" value="<?= $row['timesheetID'] ?>">
+                                                <button type="submit" name="delete_timesheet"
+                                                    class="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 transition rounded-b-lg"
+                                                    onclick="closeAllTimesheetActionDropdowns();"
+                                                >
+                                                    <i class="fa-solid fa-trash"></i>
+                                                    Delete Timesheet
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -484,6 +507,34 @@ $timesheets = $conn->query("SELECT * FROM timesheets");
             setTimeout(() => {
             modal.classList.add('hidden');
             }, 300);
+        }
+
+        function toggleTimesheetActionDropdown(button) {
+            const dropdownMenu = button.nextElementSibling;
+            const allDropdowns = document.querySelectorAll('.timesheet-action-dropdown-menu');
+
+            allDropdowns.forEach(menu => {
+                if (menu !== dropdownMenu) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            dropdownMenu.classList.toggle('hidden');
+        }
+
+        function closeAllTimesheetActionDropdowns() {
+            const allDropdowns = document.querySelectorAll('.timesheet-action-dropdown-menu');
+            allDropdowns.forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+
+        function confirmDeleteTimesheet(form, employeeName) {
+            const confirmed = confirm(`Are you sure you want to delete the timesheet for ${employeeName}?`);
+            return confirmed;
+        }
+        function closeAllTimesheetActionDropdowns() {
+            document.querySelectorAll('.timesheet-action-dropdown-menu').forEach(menu => menu.classList.add('hidden'));
         }
     </script>
 </body>
